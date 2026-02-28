@@ -7,13 +7,15 @@ import { handleListDomains, handleAddDomain, handleDeleteDomain, handleVerifyDom
 import { handleTunnelMessage, handleTunnelClose, type TunnelData } from "./tunnel/server";
 import { handleProxyRequest } from "./tunnel/proxy";
 import { existsSync } from "fs";
-import { join } from "path";
+import { join, resolve } from "path";
 
 // ─── Initialize ──────────────────────────────────────
 initializeDatabase();
 
 const PORT = parseInt(process.env.PORT || "80");
-const FRONTEND_DIR = join(import.meta.dir, "../frontend/dist");
+const FRONTEND_DIR = resolve(import.meta.dir, "../frontend/dist");
+
+console.log(`📂 Serving frontend from: ${FRONTEND_DIR}`);
 
 // ─── CORS Headers ────────────────────────────────────
 function corsHeaders(): Record<string, string> {
@@ -184,19 +186,24 @@ function serveFrontend(path: string): Response {
 
     if (existsSync(filePath)) {
         return new Response(Bun.file(filePath));
+    } else {
+        console.log(`❌ File not found: ${filePath}`);
     }
 
     // SPA fallback — serve index.html for any unmatched route
     const indexPath = join(FRONTEND_DIR, "index.html");
     if (existsSync(indexPath)) {
         return new Response(Bun.file(indexPath));
+    } else {
+        console.log(`❌ Index not found: ${indexPath}`);
+        console.log(`📂 FRONTEND_DIR: ${FRONTEND_DIR}`);
     }
 
     // If frontend not built, return API info
     return withCors(
         Response.json({
             name: "Tunnel Server",
-            version: "1.0.0",
+            version: "1.1.0-debug",
             status: "running",
             docs: {
                 auth: "POST /api/auth/register, POST /api/auth/login",
@@ -205,7 +212,14 @@ function serveFrontend(path: string): Response {
                 domains: "GET/POST /api/domains, DELETE /api/domains/:id",
                 websocket: "WS /_tunnel/connect",
             },
-            frontend: "Build the frontend with: cd frontend && npm run build",
+            frontend: existsSync(join(FRONTEND_DIR, "index.html"))
+                ? "Serving from dist"
+                : "Missing dist/index.html",
+            debug: {
+                frontendDir: FRONTEND_DIR,
+                requestedPath: path,
+                cwd: process.cwd(),
+            }
         })
     );
 }
