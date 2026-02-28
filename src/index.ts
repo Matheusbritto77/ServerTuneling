@@ -12,7 +12,7 @@ import { join } from "path";
 // ─── Initialize ──────────────────────────────────────
 initializeDatabase();
 
-const PORT = parseInt(process.env.PORT || "3000");
+const PORT = parseInt(process.env.PORT || "80");
 const FRONTEND_DIR = join(import.meta.dir, "../frontend/dist");
 
 // ─── CORS Headers ────────────────────────────────────
